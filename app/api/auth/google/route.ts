@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 export async function GET() {
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID!,
-    redirect_uri: 'http://localhost:3001/api/auth/google/callback',
+    redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/google/callback`,
     response_type: 'code',
     scope: 'https://www.googleapis.com/auth/calendar.events',
     access_type: 'offline',

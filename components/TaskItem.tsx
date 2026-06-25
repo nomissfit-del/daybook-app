@@ -48,8 +48,10 @@ export default function TaskItem({
   const supabase = createClient()
   const [toggling, setToggling] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editTitle, setEditTitle] = useState(task.title)
+  const [saving, setSaving] = useState(false)
 
-  // Determine if task is due today
   const todayDate = new Date(todayStr + 'T00:00:00')
   const dow = todayDate.getDay()
   const dom = todayDate.getDate()
@@ -62,28 +64,31 @@ export default function TaskItem({
   async function handleToggle() {
     if (!dueToday || toggling) return
     setToggling(true)
-
     if (!completedToday) {
       const { data, error } = await supabase
         .from('task_completions')
         .insert({ user_id: userId, task_id: task.id, completed_date: todayStr })
         .select()
         .single()
-      if (!error && data) {
-        onCompletionToggled(data as TaskCompletion, task.id, todayStr)
-      }
+      if (!error && data) onCompletionToggled(data as TaskCompletion, task.id, todayStr)
     } else {
       const { error } = await supabase
         .from('task_completions')
         .delete()
         .eq('task_id', task.id)
         .eq('completed_date', todayStr)
-      if (!error) {
-        onCompletionToggled(null, task.id, todayStr)
-      }
+      if (!error) onCompletionToggled(null, task.id, todayStr)
     }
-
     setToggling(false)
+  }
+
+  async function handleSaveEdit() {
+    if (!editTitle.trim() || editTitle === task.title) { setEditing(false); return }
+    setSaving(true)
+    await supabase.from('tasks').update({ title: editTitle.trim() }).eq('id', task.id)
+    task.title = editTitle.trim()
+    setSaving(false)
+    setEditing(false)
   }
 
   async function handleDelete() {
@@ -93,55 +98,65 @@ export default function TaskItem({
     onDeleted(task.id)
   }
 
+  if (editing) {
+    return (
+      <li className="flex items-center gap-2 py-1">
+        <input
+          type="text"
+          value={editTitle}
+          onChange={e => setEditTitle(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') handleSaveEdit(); if (e.key === 'Escape') setEditing(false) }}
+          autoFocus
+          className="flex-1 text-sm border border-border rounded-sm px-2 py-1 outline-none focus:border-ink bg-transparent"
+        />
+        <button onClick={handleSaveEdit} disabled={saving} className="text-xs px-2 py-1 border border-border rounded-sm hover:border-ink">
+          {saving ? '…' : 'Save'}
+        </button>
+        <button onClick={() => setEditing(false)} className="text-xs text-muted">Cancel</button>
+      </li>
+    )
+  }
+
   return (
     <li className="flex items-center gap-3 py-1 group">
       {/* Checkbox */}
       <button
         onClick={handleToggle}
         disabled={!dueToday || toggling}
-        className={`w-4 h-4 rounded-sm border flex-shrink-0 transition-colors
+        className={`w-5 h-5 rounded-sm border flex-shrink-0 transition-colors
           ${dueToday ? 'cursor-pointer' : 'cursor-default opacity-40'}
-          ${completedToday
-            ? 'bg-ink border-ink'
-            : 'border-border bg-paper hover:border-muted'
-          }`}
+          ${completedToday ? 'bg-ink border-ink' : 'border-border bg-paper hover:border-muted'}`}
         aria-label={completedToday ? 'Mark incomplete' : 'Mark complete'}
       >
         {completedToday && (
           <svg viewBox="0 0 12 12" className="w-full h-full text-paper">
-            <polyline
-              points="2,6 5,9 10,3"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+            <polyline points="2,6 5,9 10,3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         )}
       </button>
 
       {/* Title */}
-      <span
-        className={`text-sm flex-1 font-mono ${
-          completedToday ? 'line-through text-muted' : dueToday ? 'text-ink' : 'text-muted'
-        }`}
-      >
+      <span className={`text-sm flex-1 font-mono ${completedToday ? 'line-through text-muted' : dueToday ? 'text-ink' : 'text-muted'}`}>
         {task.title}
       </span>
 
       {/* Repeat label */}
       <span className="text-xs text-muted hidden sm:block">{repeatLabel(task)}</span>
 
-      {/* Delete */}
-      <button
-        onClick={handleDelete}
-        disabled={deleting}
-        className="text-xs text-muted opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all ml-2"
-        aria-label="Delete task"
-      >
-        ✕
-      </button>
+      {/* Edit & Delete — always visible on mobile, hover on desktop */}
+      <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={() => { setEditTitle(task.title); setEditing(true) }}
+          className="text-xs text-muted hover:text-ink px-1"
+          aria-label="Edit task"
+        >✎</button>
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className="text-xs text-muted hover:text-red-500 px-1"
+          aria-label="Delete task"
+        >✕</button>
+      </div>
     </li>
   )
 }

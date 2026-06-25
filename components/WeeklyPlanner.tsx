@@ -403,7 +403,7 @@ export default function WeeklyPlanner({ userId }: { userId: string }) {
   return (
     <section className="mt-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
         <h3 className="text-sm font-medium text-muted uppercase tracking-wide">Weekly Planner</h3>
         <div className="flex items-center gap-2">
           {saving && <span className="text-xs text-muted italic">saving…</span>}
@@ -441,10 +441,10 @@ export default function WeeklyPlanner({ userId }: { userId: string }) {
       )}
 
       {/* Planner grid */}
-      <div className="border border-border rounded-sm overflow-hidden grid" style={{ gridTemplateColumns: '280px 1fr' }}>
+      <div className="border border-border rounded-sm overflow-hidden grid grid-cols-1 md:grid-cols-[280px_1fr]">
 
         {/* ── Left column ── */}
-        <div className="border-r border-border flex flex-col divide-y divide-border">
+        <div className="border-b md:border-b-0 md:border-r border-border flex flex-col divide-y divide-border">
 
           {/* To Do */}
           <div className="p-4">
@@ -582,7 +582,7 @@ export default function WeeklyPlanner({ userId }: { userId: string }) {
           {DAYS.map(({ key, label }, i) => (
             <div key={key} className="flex items-stretch min-h-[72px]">
               <div
-                className="w-28 flex-shrink-0 flex flex-col justify-center px-3 py-2 border-r border-border"
+                className="w-24 md:w-28 flex-shrink-0 flex flex-col justify-center px-3 py-2 border-r border-border"
                 style={{ backgroundColor: getDayBgColor(i) }}
               >
                 <span className="font-serif text-sm italic text-ink/80">{label}</span>
@@ -592,8 +592,8 @@ export default function WeeklyPlanner({ userId }: { userId: string }) {
                 value={entry.day_notes[key]}
                 onChange={e => setDayNote(key, e.target.value)}
                 placeholder="Notes for the day…"
-                rows={2}
-                className="flex-1 resize-none bg-transparent text-sm text-ink p-3 outline-none placeholder-muted/30 leading-relaxed"
+                rows={3}
+                className="flex-1 resize-none bg-transparent text-base md:text-sm text-ink p-3 outline-none placeholder-muted/30 leading-relaxed"
               />
             </div>
           ))}

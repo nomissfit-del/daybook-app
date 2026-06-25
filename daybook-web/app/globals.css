@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --personal: #a8492f;
+  --work: #2f4858;
+  --accent: var(--personal);
+}
+
+body {
+  background: #ebede3;
+  color: #2b3328;
+  font-family: var(--font-body), sans-serif;
+}

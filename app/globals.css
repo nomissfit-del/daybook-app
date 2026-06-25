@@ -1,0 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    background-color: #FDF6E9;
+    color: #2A2118;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Fraunces', Georgia, serif;
+  }
+}
+
+@layer components {
+  .btn-primary-personal {
+    @apply bg-personal text-white px-4 py-2 text-sm font-medium rounded-sm hover:bg-personal-dark transition-colors;
+  }
+
+  .btn-primary-work {
+    @apply bg-work text-white px-4 py-2 text-sm font-medium rounded-sm hover:bg-work-dark transition-colors;
+  }
+
+  .btn-ghost {
+    @apply text-muted px-3 py-1.5 text-sm rounded-sm hover:bg-border transition-colors;
+  }
+
+  .card {
+    @apply bg-white border border-border rounded-sm shadow-sm;
+  }
+
+  .input {
+    @apply w-full bg-paper border border-border rounded-sm px-3 py-2 text-sm font-mono
+           placeholder:text-muted focus:outline-none focus:border-ink focus:ring-1 focus:ring-ink
+           transition-colors;
+  }
+
+  .label {
+    @apply block text-xs font-medium text-muted uppercase tracking-wide mb-1.5;
+  }
+}

@@ -8,6 +8,7 @@ const REPEAT_LABELS: Record<string, string> = {
   daily: 'Daily',
   weekly: 'Weekly',
   monthly: 'Monthly',
+  once: 'One-time',
 }
 
 const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -18,6 +19,9 @@ function repeatLabel(task: Task): string {
   }
   if (task.repeat_type === 'monthly' && task.repeat_config.day_of_month !== undefined) {
     return `Monthly (${task.repeat_config.day_of_month}${ordinal(task.repeat_config.day_of_month)})`
+  }
+  if (task.repeat_type === 'once' && task.repeat_config.date) {
+    return new Date(task.repeat_config.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
   return REPEAT_LABELS[task.repeat_type] ?? task.repeat_type
 }
@@ -59,7 +63,8 @@ export default function TaskItem({
   const dueToday =
     task.repeat_type === 'daily' ||
     (task.repeat_type === 'weekly' && task.repeat_config.weekday === dow) ||
-    (task.repeat_type === 'monthly' && task.repeat_config.day_of_month === dom)
+    (task.repeat_type === 'monthly' && task.repeat_config.day_of_month === dom) ||
+    (task.repeat_type === 'once' && task.repeat_config.date === todayStr)
 
   async function handleToggle() {
     if (!dueToday || toggling) return

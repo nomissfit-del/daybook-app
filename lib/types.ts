@@ -1,5 +1,5 @@
 export type Dashboard = 'personal' | 'work'
-export type RepeatType = 'daily' | 'weekly' | 'monthly'
+export type RepeatType = 'daily' | 'weekly' | 'monthly' | 'once'
 
 export interface ProjectFolder {
   id: string
@@ -20,6 +20,7 @@ export interface Task {
   repeat_config: {
     weekday?: number       // 0–6, for weekly tasks
     day_of_month?: number  // 1–31, for monthly tasks
+    date?: string          // 'YYYY-MM-DD', for once tasks
   }
   created_at: string
   archived_at: string | null

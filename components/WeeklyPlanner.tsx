@@ -100,6 +100,7 @@ export default function WeeklyPlanner({ userId }: { userId: string }) {
   const [motivation, setMotivation] = useState<{ message: string; positive: boolean } | null>(null)
   const [exercises, setExercises] = useState<Exercise[]>([])
   const [showExerciseForm, setShowExerciseForm] = useState(false)
+  const [editingExercise, setEditingExercise] = useState<Exercise | null>(null)
   const [calendarConnected, setCalendarConnected] = useState<boolean | null>(null)
   const [calendarError, setCalendarError] = useState<string | null>(null)
   const [newExercise, setNewExercise] = useState<NewExercise>({
@@ -392,9 +393,41 @@ export default function WeeklyPlanner({ userId }: { userId: string }) {
     }
   }
 
-  const deleteExercise = async (id: string) => {
-    await supabase.from('weekly_exercises').delete().eq('id', id)
-    setExercises(prev => prev.filter(e => e.id !== id))
+  const deleteExercise = async (ex: Exercise) => {
+    await fetch('/api/calendar/delete-event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ exerciseId: ex.id, calendarEventId: ex.calendar_event_id }),
+    })
+    setExercises(prev => prev.filter(e => e.id !== ex.id))
+  }
+
+  const saveEditExercise = async (ex: Exercise, updated: NewExercise) => {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+    if (ex.calendar_event_id) {
+      await fetch('/api/calendar/update-event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          exerciseId: ex.id,
+          calendarEventId: ex.calendar_event_id,
+          type: updated.type,
+          date: updated.exercise_date,
+          time: updated.exercise_time,
+          durationMinutes: updated.duration_minutes,
+          notes: updated.notes,
+          timeZone: tz,
+        }),
+      })
+      setExercises(prev => prev.map(e => e.id === ex.id ? { ...e, ...updated, exercise_time: updated.exercise_time } : e))
+    } else {
+      await supabase.from('weekly_exercises').update({
+        type: updated.type, exercise_date: updated.exercise_date,
+        exercise_time: updated.exercise_time, duration_minutes: updated.duration_minutes, notes: updated.notes,
+      }).eq('id', ex.id)
+      setExercises(prev => prev.map(e => e.id === ex.id ? { ...e, ...updated } : e))
+    }
+    setEditingExercise(null)
   }
 
   // ── Week navigation ──
@@ -704,32 +737,72 @@ export default function WeeklyPlanner({ userId }: { userId: string }) {
         ) : (
           <div className="divide-y divide-border">
             {exercises.map(ex => (
-              <div key={ex.id} className="flex items-center gap-4 px-4 py-3 group hover:bg-paper/50">
-                <div
-                  className="w-10 h-10 rounded-sm flex items-center justify-center text-lg flex-shrink-0"
-                  style={{ backgroundColor: '#EDF3E8' }}
-                >
-                  {exerciseEmoji(ex.type)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-ink">{ex.type}</span>
-                    {ex.calendar_event_id && (
-                      <span className="text-xs text-muted bg-paper px-1.5 py-0.5 rounded-sm border border-border">📅 on calendar</span>
-                    )}
+              editingExercise?.id === ex.id ? (
+                // ── Edit form ──
+                <div key={ex.id} className="p-4 bg-white border-b border-border grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-muted block mb-1">Type</label>
+                    <select value={editingExercise.type} onChange={e => setEditingExercise(x => x ? { ...x, type: e.target.value } : x)}
+                      className="w-full text-sm border border-border rounded-sm px-2 py-1.5 outline-none focus:border-ink bg-transparent">
+                      {EXERCISE_TYPES.map(t => <option key={t}>{t}</option>)}
+                    </select>
                   </div>
-                  <div className="text-xs text-muted">
-                    {new Date(ex.exercise_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                    {' · '}{formatTime(ex.exercise_time)}
-                    {' · '}{ex.duration_minutes} min
-                    {ex.notes && <span className="ml-1 text-muted/70">· {ex.notes}</span>}
+                  <div>
+                    <label className="text-xs text-muted block mb-1">Date</label>
+                    <input type="date" value={editingExercise.exercise_date}
+                      onChange={e => setEditingExercise(x => x ? { ...x, exercise_date: e.target.value } : x)}
+                      className="w-full text-sm border border-border rounded-sm px-2 py-1.5 outline-none focus:border-ink bg-transparent" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted block mb-1">Time</label>
+                    <input type="time" value={editingExercise.exercise_time.slice(0, 5)}
+                      onChange={e => setEditingExercise(x => x ? { ...x, exercise_time: e.target.value } : x)}
+                      className="w-full text-sm border border-border rounded-sm px-2 py-1.5 outline-none focus:border-ink bg-transparent" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted block mb-1">Duration (min)</label>
+                    <input type="number" value={editingExercise.duration_minutes} min={5} step={5}
+                      onChange={e => setEditingExercise(x => x ? { ...x, duration_minutes: parseInt(e.target.value) || 60 } : x)}
+                      className="w-full text-sm border border-border rounded-sm px-2 py-1.5 outline-none focus:border-ink bg-transparent" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs text-muted block mb-1">Notes</label>
+                    <input type="text" value={editingExercise.notes ?? ''}
+                      onChange={e => setEditingExercise(x => x ? { ...x, notes: e.target.value } : x)}
+                      className="w-full text-sm border border-border rounded-sm px-2 py-1.5 outline-none focus:border-ink bg-transparent" />
+                  </div>
+                  <div className="col-span-2 flex gap-2 justify-end">
+                    <button onClick={() => setEditingExercise(null)} className="text-xs px-3 py-1.5 border border-border rounded-sm text-muted">Cancel</button>
+                    <button onClick={() => saveEditExercise(ex, { exercise_date: editingExercise.exercise_date, exercise_time: editingExercise.exercise_time, duration_minutes: editingExercise.duration_minutes, type: editingExercise.type, notes: editingExercise.notes ?? '' })}
+                      className="text-xs px-3 py-1.5 rounded-sm text-white" style={{ backgroundColor: '#4A6B2A' }}>
+                      {ex.calendar_event_id ? 'Save & update calendar' : 'Save'}
+                    </button>
                   </div>
                 </div>
-                <button
-                  onClick={() => deleteExercise(ex.id)}
-                  className="opacity-0 group-hover:opacity-60 hover:!opacity-100 text-muted text-sm"
-                >×</button>
-              </div>
+              ) : (
+                // ── Display row ──
+                <div key={ex.id} className="flex items-center gap-4 px-4 py-3 group hover:bg-paper/50">
+                  <div className="w-10 h-10 rounded-sm flex items-center justify-center text-lg flex-shrink-0" style={{ backgroundColor: '#EDF3E8' }}>
+                    {exerciseEmoji(ex.type)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-ink">{ex.type}</span>
+                      {ex.calendar_event_id && <span className="text-xs text-muted bg-paper px-1.5 py-0.5 rounded-sm border border-border">📅 on calendar</span>}
+                    </div>
+                    <div className="text-xs text-muted">
+                      {new Date(ex.exercise_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      {' · '}{formatTime(ex.exercise_time)}
+                      {' · '}{ex.duration_minutes} min
+                      {ex.notes && <span className="ml-1 text-muted/70">· {ex.notes}</span>}
+                    </div>
+                  </div>
+                  <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => setEditingExercise(ex)} className="text-xs text-muted hover:text-ink px-1">✎</button>
+                    <button onClick={() => deleteExercise(ex)} className="text-xs text-muted hover:text-red-500 px-1">✕</button>
+                  </div>
+                </div>
+              )
             ))}
           </div>
         )}

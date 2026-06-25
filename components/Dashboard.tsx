@@ -132,8 +132,8 @@ export default function Dashboard({
       </nav>
 
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-        {/* Weekly Planner (personal only) */}
-        {isPersonal && <WeeklyPlanner userId={userId} />}
+        {/* Weekly Planner */}
+        <WeeklyPlanner userId={userId} />
 
         {/* Project Folders */}
         <section>

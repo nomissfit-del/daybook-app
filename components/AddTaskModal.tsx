@@ -17,9 +17,10 @@ interface Props {
 export default function AddTaskModal({ folderId, userId, accentColor, onClose, onAdded }: Props) {
   const supabase = createClient()
   const [title, setTitle] = useState('')
-  const [repeatType, setRepeatType] = useState<RepeatType>('daily')
+  const [repeatType, setRepeatType] = useState<RepeatType>('once')
   const [weekday, setWeekday] = useState(1) // Monday
   const [dayOfMonth, setDayOfMonth] = useState(1)
+  const [onceDate, setOnceDate] = useState(new Date().toLocaleDateString('en-CA'))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -34,6 +35,8 @@ export default function AddTaskModal({ folderId, userId, accentColor, onClose, o
         ? { weekday }
         : repeatType === 'monthly'
         ? { day_of_month: dayOfMonth }
+        : repeatType === 'once'
+        ? { date: onceDate }
         : {}
 
     const { data, error } = await supabase
@@ -65,7 +68,7 @@ export default function AddTaskModal({ folderId, userId, accentColor, onClose, o
         onClick={e => e.stopPropagation()}
       >
         <h2 className="font-serif text-xl mb-4" style={{ color: accentColor }}>
-          Add recurring task
+          Add task
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -85,8 +88,8 @@ export default function AddTaskModal({ folderId, userId, accentColor, onClose, o
 
           <div>
             <label className="label">Repeats</label>
-            <div className="flex gap-2">
-              {(['daily', 'weekly', 'monthly'] as RepeatType[]).map(rt => (
+            <div className="flex gap-2 flex-wrap">
+              {(['once', 'daily', 'weekly', 'monthly'] as RepeatType[]).map(rt => (
                 <button
                   key={rt}
                   type="button"
@@ -98,11 +101,23 @@ export default function AddTaskModal({ folderId, userId, accentColor, onClose, o
                     }`}
                   style={repeatType === rt ? { backgroundColor: accentColor } : {}}
                 >
-                  {rt}
+                  {rt === 'once' ? 'One-time' : rt}
                 </button>
               ))}
             </div>
           </div>
+
+          {repeatType === 'once' && (
+            <div>
+              <label className="label">Date</label>
+              <input
+                type="date"
+                className="input"
+                value={onceDate}
+                onChange={e => setOnceDate(e.target.value)}
+              />
+            </div>
+          )}
 
           {repeatType === 'weekly' && (
             <div>

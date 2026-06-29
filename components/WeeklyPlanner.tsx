@@ -90,8 +90,14 @@ function emptyEntry(): PlannerEntry {
   }
 }
 
+const WEEKDAYS = DAYS.slice(0, 5)           // Mon–Fri
+const WEEKDAY_COLS = DAY_COLS.slice(0, 5)   // M T W T F
+
 // ─── Main Component ───────────────────────────────────────────
-export default function WeeklyPlanner({ userId }: { userId: string }) {
+export default function WeeklyPlanner({ userId, dashboard }: { userId: string; dashboard: 'personal' | 'work' }) {
+  const isWork = dashboard === 'work'
+  const activeDays = isWork ? WEEKDAYS : DAYS
+  const activeDayCols = isWork ? WEEKDAY_COLS : DAY_COLS
   const supabase = createClient()
   const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()))
   const [entry, setEntry] = useState<PlannerEntry>(emptyEntry())
@@ -125,11 +131,13 @@ export default function WeeklyPlanner({ userId }: { userId: string }) {
         .select('*')
         .eq('user_id', userId)
         .eq('week_start', weekKey)
+        .eq('dashboard', dashboard)
         .single(),
       supabase
         .from('weekly_habits')
         .select('*')
         .eq('user_id', userId)
+        .eq('dashboard', dashboard)
         .order('sort_order', { ascending: true }),
     ])
 
@@ -166,17 +174,20 @@ export default function WeeklyPlanner({ userId }: { userId: string }) {
     const compSet = new Set<string>((comps ?? []).map(c => `${c.habit_id}:${c.date}`))
     setCompletions(compSet)
 
-    // Load exercises for this week
-    const { data: exs } = await supabase
-      .from('weekly_exercises')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('exercise_date', weekKey)
-      .lt('exercise_date', weekEndStr)
-      .order('exercise_date', { ascending: true })
-      .order('exercise_time', { ascending: true })
-    setExercises(exs ?? [])
-  }, [userId, weekKey]) // eslint-disable-line react-hooks/exhaustive-deps
+    // Load exercises for this week (personal only)
+    if (!isWork) {
+      const { data: exs } = await supabase
+        .from('weekly_exercises')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('dashboard', dashboard)
+        .gte('exercise_date', weekKey)
+        .lt('exercise_date', weekEndStr)
+        .order('exercise_date', { ascending: true })
+        .order('exercise_time', { ascending: true })
+      setExercises(exs ?? [])
+    }
+  }, [userId, weekKey, dashboard]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { loadWeekData() }, [loadWeekData])
 
@@ -222,7 +233,8 @@ export default function WeeklyPlanner({ userId }: { userId: string }) {
     const validWeeks = pastWeeks.filter(w => weekCounts[w] !== undefined)
     if (validWeeks.length === 0) { setMotivation(null); return }
 
-    const maxPerWeek = habits.length * 7
+    const daysPerWeek = isWork ? 5 : 7
+    const maxPerWeek = habits.length * daysPerWeek
     const avgCount = validWeeks.reduce((s, w) => s + (weekCounts[w] ?? 0), 0) / validWeeks.length
     const avgPct = Math.round((avgCount / maxPerWeek) * 100)
 
@@ -254,10 +266,11 @@ export default function WeeklyPlanner({ userId }: { userId: string }) {
       await supabase.from('weekly_planner_entries').upsert({
         user_id: userId,
         week_start: weekKey,
+        dashboard,
         todos: updated.todos,
         top_three: updated.top_three,
         day_notes: updated.day_notes,
-      }, { onConflict: 'user_id,week_start' })
+      }, { onConflict: 'user_id,week_start,dashboard' })
       setSaving(false)
     }, 800)
   }, [userId, weekKey]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -330,7 +343,7 @@ export default function WeeklyPlanner({ userId }: { userId: string }) {
     const color = HABIT_COLORS[habits.length % HABIT_COLORS.length]
     const { data } = await supabase
       .from('weekly_habits')
-      .insert({ user_id: userId, name, color, sort_order: habits.length })
+      .insert({ user_id: userId, name, color, sort_order: habits.length, dashboard })
       .select()
       .single()
     if (data) setHabits(prev => [...prev, data])
@@ -567,7 +580,7 @@ export default function WeeklyPlanner({ userId }: { userId: string }) {
                   <thead>
                     <tr>
                       <th className="text-left pr-2 pb-1 font-normal text-muted/60 w-full"></th>
-                      {DAY_COLS.map((d, i) => (
+                      {activeDayCols.map((d, i) => (
                         <th key={i} className="text-center pb-1 font-normal text-muted/60 w-6">{d}</th>
                       ))}
                       <th className="w-4"></th>
@@ -577,7 +590,7 @@ export default function WeeklyPlanner({ userId }: { userId: string }) {
                     {habits.map(habit => (
                       <tr key={habit.id} className="group">
                         <td className="pr-2 py-1 text-ink truncate max-w-[110px]" title={habit.name}>{habit.name}</td>
-                        {DAYS.map((_, dayIdx) => {
+                        {activeDays.map((_, dayIdx) => {
                           const date = getDayDateStr(weekStart, dayIdx)
                           const checked = completions.has(`${habit.id}:${date}`)
                           return (
@@ -612,7 +625,7 @@ export default function WeeklyPlanner({ userId }: { userId: string }) {
 
         {/* ── Right column: days ── */}
         <div className="divide-y divide-border">
-          {DAYS.map(({ key, label }, i) => (
+          {activeDays.map(({ key, label }, i) => (
             <div key={key} className="flex items-stretch min-h-[72px]">
               <div
                 className="w-24 md:w-28 flex-shrink-0 flex flex-col justify-center px-3 py-2 border-r border-border"
@@ -633,8 +646,8 @@ export default function WeeklyPlanner({ userId }: { userId: string }) {
         </div>
       </div>
 
-      {/* ── Exercise section ── */}
-      <div className="mt-4 border border-border rounded-sm overflow-hidden">
+      {/* ── Exercise section (personal only) ── */}
+      {!isWork && <div className="mt-4 border border-border rounded-sm overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border" style={{ backgroundColor: '#EDF3E8' }}>
           <p className="font-serif text-base italic text-ink/80">Exercise</p>
           <div className="flex items-center gap-2">
@@ -806,7 +819,7 @@ export default function WeeklyPlanner({ userId }: { userId: string }) {
             ))}
           </div>
         )}
-      </div>
+      </div>}
     </section>
   )
 }

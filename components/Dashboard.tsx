@@ -133,7 +133,7 @@ export default function Dashboard({
 
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         {/* Weekly Planner */}
-        <WeeklyPlanner userId={userId} />
+        <WeeklyPlanner userId={userId} dashboard={dashboard} />
 
         {/* Project Folders */}
         <section>

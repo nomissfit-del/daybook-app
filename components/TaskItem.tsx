@@ -67,7 +67,7 @@ export default function TaskItem({
     (task.repeat_type === 'once' && task.repeat_config.date === todayStr)
 
   async function handleToggle() {
-    if (!dueToday || toggling) return
+    if (toggling) return
     setToggling(true)
     if (!completedToday) {
       const { data, error } = await supabase
@@ -127,9 +127,9 @@ export default function TaskItem({
       {/* Checkbox */}
       <button
         onClick={handleToggle}
-        disabled={!dueToday || toggling}
-        className={`w-5 h-5 rounded-sm border flex-shrink-0 transition-colors
-          ${dueToday ? 'cursor-pointer' : 'cursor-default opacity-40'}
+        disabled={toggling}
+        className={`w-5 h-5 rounded-sm border flex-shrink-0 transition-colors cursor-pointer
+          ${!dueToday && !completedToday ? 'opacity-50' : ''}
           ${completedToday ? 'bg-ink border-ink' : 'border-border bg-paper hover:border-muted'}`}
         aria-label={completedToday ? 'Mark incomplete' : 'Mark complete'}
       >

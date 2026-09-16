@@ -50,6 +50,34 @@ export interface TaskWithStatus extends Task {
   completedToday: boolean
 }
 
+// ── Kanban board ────────────────────────────────────────────────
+export type TicketStatus = 'todo' | 'in_progress' | 'done'
+export type TicketPriority = 'low' | 'medium' | 'high'
+
+export interface Subtask {
+  id: string
+  user_id: string
+  ticket_id: string
+  title: string
+  done: boolean
+  sort_order: number
+  created_at: string
+}
+
+export interface Ticket {
+  id: string
+  user_id: string
+  board_id: string       // project_folder.id
+  title: string
+  description: string | null
+  status: TicketStatus
+  priority: TicketPriority
+  deadline: string | null  // 'YYYY-MM-DD'
+  sort_order: number
+  created_at: string
+  ticket_subtasks?: Subtask[]
+}
+
 // Heatmap day status
 export type DayStatus = 'empty' | 'complete' | 'missed'
 

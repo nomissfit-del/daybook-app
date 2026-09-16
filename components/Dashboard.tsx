@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { buildHeatmap } from '@/lib/heatmap'
 import type { Dashboard as DashboardType, ProjectFolder, Task, TaskCompletion, Target } from '@/lib/types'
 import Heatmap from './Heatmap'
-import ProjectFolderCard from './ProjectFolderCard'
+import KanbanBoard from './KanbanBoard'
 import AddProjectModal from './AddProjectModal'
 import WeeklyPlanner from './WeeklyPlanner'
 
@@ -41,7 +41,6 @@ export default function Dashboard({
   const [showAddProject, setShowAddProject] = useState(false)
 
   const isPersonal = dashboard === 'personal'
-  const accent = isPersonal ? 'personal' : 'work'
   const accentColor = isPersonal ? '#B85C38' : '#1B3A6B'
   const accentLight = isPersonal ? '#F5E6DF' : '#DDE6F2'
 
@@ -146,34 +145,25 @@ export default function Dashboard({
               className="text-sm font-medium px-3 py-1.5 rounded-sm border border-border
                          hover:border-ink transition-colors text-ink"
             >
-              + New folder
+              + New board
             </button>
           </div>
 
           {folders.length === 0 ? (
             <div className="text-center py-12 text-muted text-sm border border-dashed border-border rounded-sm">
-              No folders yet. Create one to get started.
+              No boards yet. Create one to get started.
             </div>
           ) : (
             <div className="space-y-4">
               {folders.map(folder => (
-                <ProjectFolderCard
+                <KanbanBoard
                   key={folder.id}
-                  folder={folder}
-                  tasks={tasks.filter(t => t.project_folder_id === folder.id)}
-                  targets={targets.filter(t => t.project_folder_id === folder.id)}
-                  completions={completions}
-                  todayStr={todayStr}
+                  boardId={folder.id}
+                  boardName={folder.name}
                   userId={userId}
                   accentColor={accentColor}
                   accentLight={accentLight}
-                  onFolderDeleted={handleFolderDeleted}
-                  onTaskAdded={handleTaskAdded}
-                  onTaskDeleted={handleTaskDeleted}
-                  onCompletionToggled={handleCompletionToggled}
-                  onTargetAdded={handleTargetAdded}
-                  onTargetUpdated={handleTargetUpdated}
-                  onTargetDeleted={handleTargetDeleted}
+                  onBoardDeleted={handleFolderDeleted}
                 />
               ))}
             </div>

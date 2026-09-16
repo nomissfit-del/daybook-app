@@ -47,7 +47,7 @@ export default function AddProjectModal({ dashboard, userId, accentColor, onClos
         onClick={e => e.stopPropagation()}
       >
         <h2 className="font-serif text-xl mb-4" style={{ color: accentColor }}>
-          New project folder
+          New board
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -56,7 +56,7 @@ export default function AddProjectModal({ dashboard, userId, accentColor, onClos
           )}
 
           <div>
-            <label className="label">Folder name</label>
+            <label className="label">Board name</label>
             <input
               type="text"
               className="input"
@@ -77,7 +77,7 @@ export default function AddProjectModal({ dashboard, userId, accentColor, onClos
               className="px-4 py-2 text-sm font-medium text-white rounded-sm disabled:opacity-60 transition-colors"
               style={{ backgroundColor: accentColor }}
             >
-              {saving ? 'Creating…' : 'Create folder'}
+              {saving ? 'Creating…' : 'Create board'}
             </button>
           </div>
         </form>

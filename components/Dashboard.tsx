@@ -1,14 +1,13 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { buildHeatmap } from '@/lib/heatmap'
 import type { Dashboard as DashboardType, ProjectFolder, Task, TaskCompletion, Target } from '@/lib/types'
 import Heatmap from './Heatmap'
 import KanbanBoard from './KanbanBoard'
 import AddProjectModal from './AddProjectModal'
 import WeeklyPlanner from './WeeklyPlanner'
+import NavBar from './NavBar'
 
 interface Props {
   dashboard: DashboardType
@@ -31,8 +30,6 @@ export default function Dashboard({
   targets: initialTargets,
   todayStr,
 }: Props) {
-  const router = useRouter()
-  const supabase = createClient()
 
   const [folders, setFolders] = useState(initialFolders)
   const [tasks, setTasks] = useState(initialTasks)
@@ -45,12 +42,6 @@ export default function Dashboard({
   const accentLight = isPersonal ? '#F5E6DF' : '#DDE6F2'
 
   const heatmapDays = buildHeatmap(tasks, completions)
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
-  }
 
   const handleFolderAdded = (folder: ProjectFolder) => {
     setFolders(prev => [...prev, folder])
@@ -93,42 +84,7 @@ export default function Dashboard({
 
   return (
     <div className="min-h-screen">
-      {/* Nav */}
-      <nav className="border-b border-border bg-white sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 h-12 flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            <span className="font-serif text-xl text-ink mr-4">Daybook</span>
-            <a
-              href="/personal"
-              className={`px-3 py-1.5 text-sm rounded-sm transition-colors ${
-                isPersonal
-                  ? 'font-medium'
-                  : 'text-muted hover:text-ink'
-              }`}
-              style={isPersonal ? { color: accentColor, backgroundColor: accentLight } : {}}
-            >
-              Personal
-            </a>
-            <a
-              href="/work"
-              className={`px-3 py-1.5 text-sm rounded-sm transition-colors ${
-                !isPersonal
-                  ? 'font-medium'
-                  : 'text-muted hover:text-ink'
-              }`}
-              style={!isPersonal ? { color: accentColor, backgroundColor: accentLight } : {}}
-            >
-              Work
-            </a>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-muted hidden sm:block font-mono">{userEmail}</span>
-            <button onClick={handleSignOut} className="btn-ghost text-xs">
-              Sign out
-            </button>
-          </div>
-        </div>
-      </nav>
+      <NavBar active={dashboard} userEmail={userEmail} />
 
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         {/* Weekly Planner */}

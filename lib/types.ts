@@ -87,3 +87,45 @@ export interface HeatmapDay {
   dueCount: number
   completedCount: number
 }
+
+// ── Goals ───────────────────────────────────────────────────────
+export type GoalCategory = 'personal' | 'work'
+export type GoalStatus = 'active' | 'on_hold' | 'achieved' | 'dropped'
+
+export interface Milestone {
+  id: string
+  user_id: string
+  goal_id: string
+  title: string
+  target_date: string | null  // 'YYYY-MM-DD'
+  done: boolean
+  done_at: string | null      // 'YYYY-MM-DD'
+  sort_order: number
+  created_at: string
+}
+
+export interface Goal {
+  id: string
+  user_id: string
+  title: string
+  why: string | null
+  category: GoalCategory
+  start_date: string  // 'YYYY-MM-DD'
+  deadline: string    // 'YYYY-MM-DD'
+  status: GoalStatus
+  achieved_at: string | null
+  created_at: string
+  goal_milestones: Milestone[]
+}
+
+// How a goal is doing, derived from milestones, dates and status
+export type GoalHealth =
+  | 'on_track'
+  | 'at_risk'
+  | 'behind'
+  | 'overdue'
+  | 'not_started'
+  | 'no_milestones'
+  | 'on_hold'
+  | 'achieved'
+  | 'dropped'

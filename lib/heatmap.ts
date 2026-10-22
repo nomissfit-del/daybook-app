@@ -2,7 +2,7 @@ import { Task, TaskCompletion, HeatmapDay, DayStatus } from '@/lib/types'
 
 /** Returns 'YYYY-MM-DD' for a given Date */
 export function toDateString(d: Date): string {
-  return d.toISOString().slice(0, 10)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 /** Today as 'YYYY-MM-DD' in local time */

@@ -134,7 +134,7 @@ export default function TicketModal({
   }
 
   const isOverdue = ticket.deadline
-    ? ticket.deadline < new Date().toISOString().slice(0, 10) && ticket.status !== 'done'
+    ? ticket.deadline < localToday() && ticket.status !== 'done'
     : false
 
   return (
@@ -332,4 +332,9 @@ export default function TicketModal({
       </div>
     </div>
   )
+}
+
+function localToday() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }

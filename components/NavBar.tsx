@@ -3,12 +3,13 @@
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-export type NavTab = 'personal' | 'work' | 'goals'
+export type NavTab = 'personal' | 'work' | 'goals' | 'reminders'
 
 const TABS: { id: NavTab; label: string; href: string; color: string; light: string }[] = [
   { id: 'personal', label: 'Personal', href: '/personal', color: '#B85C38', light: '#F5E6DF' },
   { id: 'work',     label: 'Work',     href: '/work',     color: '#1B3A6B', light: '#DDE6F2' },
   { id: 'goals',    label: 'Goals',    href: '/goals',    color: '#3F6E4F', light: '#E2ECDF' },
+  { id: 'reminders', label: 'Reminders', href: '/reminders', color: '#6B4E9B', light: '#EDE6F5' },
 ]
 
 interface Props {

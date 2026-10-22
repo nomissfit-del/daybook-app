@@ -59,8 +59,17 @@ function addWeeks(d: Date, n: number): Date {
   return date
 }
 
+// Local calendar date (never via toISOString, which shifts a day during BST)
 function toDateStr(d: Date): string {
-  return d.toISOString().slice(0, 10)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function parseLocalDate(s: string): Date {
+  const [y, m, d] = s.split('-').map(Number)
+  return new Date(y, m - 1, d)
 }
 
 function formatWeekRange(monday: Date): string {
@@ -225,7 +234,7 @@ export default function WeeklyPlanner({ userId, dashboard }: { userId: string; d
     // Group completions by week
     const weekCounts: Record<string, number> = {}
     for (const comp of pastComps) {
-      const d = new Date(comp.date)
+      const d = parseLocalDate(comp.date)
       const wk = toDateStr(getMonday(d))
       weekCounts[wk] = (weekCounts[wk] ?? 0) + 1
     }

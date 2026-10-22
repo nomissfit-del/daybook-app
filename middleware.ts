@@ -1,7 +1,14 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Machine to machine endpoints: no user session, protected by their own secrets
+const PUBLIC_API = ['/api/notify/run', '/api/telegram/webhook']
+
 export async function middleware(request: NextRequest) {
+  if (PUBLIC_API.some(p => request.nextUrl.pathname.startsWith(p))) {
+    return NextResponse.next()
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(

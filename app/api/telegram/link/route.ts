@@ -29,7 +29,11 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   try {
-    const origin = process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin
+    // The address the app is being used from is the reliable one; the env var is only a fallback
+    const host = req.headers.get('x-forwarded-host') ?? req.headers.get('host')
+    const origin = host && !host.startsWith('localhost')
+      ? `https://${host}`
+      : (process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin)
     await setWebhook(`${origin}/api/telegram/webhook`, secret)
     await setCommands()
     const username = await getBotUsername()

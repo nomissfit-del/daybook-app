@@ -126,6 +126,7 @@ export default function WeeklyPlanner({ userId, dashboard }: { userId: string; d
     notes: '',
   })
   const [newHabitName, setNewHabitName] = useState('')
+  const [editingHabit, setEditingHabit] = useState<{ id: string; name: string } | null>(null)
   const [showHabitInput, setShowHabitInput] = useState(false)
   const [saving, setSaving] = useState(false)
   const [todosModal, setTodosModal] = useState<{ index: number | null } | null>(null)
@@ -364,6 +365,18 @@ export default function WeeklyPlanner({ userId, dashboard }: { userId: string; d
     if (data) setHabits(prev => [...prev, data])
     setNewHabitName('')
     setShowHabitInput(false)
+  }
+
+  const renameHabit = async () => {
+    if (!editingHabit) return
+    const { id } = editingHabit
+    const name = editingHabit.name.trim()
+    const current = habits.find(h => h.id === id)
+    setEditingHabit(null)
+    if (!current || !name || name === current.name) return
+    setHabits(prev => prev.map(h => h.id === id ? { ...h, name } : h))  // optimistic
+    const { error } = await supabase.from('weekly_habits').update({ name }).eq('id', id)
+    if (error) setHabits(prev => prev.map(h => h.id === id ? { ...h, name: current.name } : h))
   }
 
   const deleteHabit = async (id: string) => {
@@ -618,7 +631,28 @@ export default function WeeklyPlanner({ userId, dashboard }: { userId: string; d
                   <tbody>
                     {habits.map(habit => (
                       <tr key={habit.id} className="group">
-                        <td className="pr-2 py-1 text-ink leading-snug whitespace-normal break-words [overflow-wrap:anywhere]">{habit.name}</td>
+                        <td className="pr-2 py-1 text-ink leading-snug whitespace-normal break-words [overflow-wrap:anywhere]">
+                          {editingHabit?.id === habit.id ? (
+                            <input
+                              type="text"
+                              value={editingHabit.name}
+                              onChange={e => setEditingHabit({ id: habit.id, name: e.target.value })}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') renameHabit()
+                                if (e.key === 'Escape') setEditingHabit(null)
+                              }}
+                              onBlur={renameHabit}
+                              autoFocus
+                              className="w-full text-xs border border-border rounded-sm px-1.5 py-0.5 outline-none focus:border-ink bg-white"
+                            />
+                          ) : (
+                            <button
+                              onClick={() => setEditingHabit({ id: habit.id, name: habit.name })}
+                              title="Click to rename"
+                              className="text-left w-full hover:underline decoration-dotted underline-offset-2 cursor-text"
+                            >{habit.name}</button>
+                          )}
+                        </td>
                         {activeDays.map((_, dayIdx) => {
                           const date = getDayDateStr(weekStart, dayIdx)
                           const checked = completions.has(`${habit.id}:${date}`)

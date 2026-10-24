@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import TodosModal, { type TodoItem, todoTitle } from '@/components/TodosModal'
 
 // ─── Types ───────────────────────────────────────────────────
-interface TodoItem { text: string; done: boolean }
 interface DayNotes { mon: string; tue: string; wed: string; thu: string; fri: string; sat: string; sun: string }
 interface PlannerEntry {
   todos: TodoItem[]
@@ -128,6 +128,7 @@ export default function WeeklyPlanner({ userId, dashboard }: { userId: string; d
   const [newHabitName, setNewHabitName] = useState('')
   const [showHabitInput, setShowHabitInput] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [todosModal, setTodosModal] = useState<{ index: number | null } | null>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const weekKey = toDateStr(weekStart)
@@ -299,7 +300,12 @@ export default function WeeklyPlanner({ userId, dashboard }: { userId: string; d
     updateEntry({ todos })
   }
   const setTodoText = (i: number, text: string) => {
-    const todos = entry.todos.map((t, idx) => idx === i ? { ...t, text } : t)
+    const todos = entry.todos.map((t, idx) => {
+      if (idx !== i) return t
+      const next: TodoItem = { ...t, text, title: text }
+      if (!t.created_at && text.trim()) next.created_at = new Date().toISOString()
+      return next
+    })
     updateEntry({ todos })
   }
   const addTodo = () => updateEntry({ todos: [...entry.todos, { text: '', done: false }] })
@@ -503,10 +509,16 @@ export default function WeeklyPlanner({ userId, dashboard }: { userId: string; d
 
           {/* To Do */}
           <div className="p-4">
-            <p className="font-serif text-base text-muted mb-3 italic">to do</p>
+            <button
+              onClick={() => setTodosModal({ index: null })}
+              title="Open all to-dos"
+              className="flex items-center gap-1.5 font-serif text-base text-muted mb-3 italic hover:text-ink transition-colors"
+            >
+              to do <span className="not-italic text-xs">⤢</span>
+            </button>
             <div className="space-y-1.5">
               {entry.todos.map((todo, i) => (
-                <div key={i} className="flex items-center gap-2 group">
+                <div key={i} className="flex items-center gap-2 group min-w-0">
                   <input
                     type="checkbox"
                     checked={todo.done}
@@ -515,12 +527,20 @@ export default function WeeklyPlanner({ userId, dashboard }: { userId: string; d
                   />
                   <input
                     type="text"
-                    value={todo.text}
+                    value={todoTitle(todo)}
+                    title={todoTitle(todo)}
                     onChange={e => setTodoText(i, e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') addTodo() }}
                     placeholder="…"
-                    className={`flex-1 text-sm bg-transparent border-none outline-none placeholder-muted/40 ${todo.done ? 'line-through text-muted' : 'text-ink'}`}
+                    className={`flex-1 min-w-0 truncate text-sm bg-transparent border-none outline-none placeholder-muted/40 ${todo.done ? 'line-through text-muted' : 'text-ink'}`}
                   />
+                  {(todo.description?.trim() || todo.url) && (
+                    <button
+                      onClick={() => setTodosModal({ index: i })}
+                      title="Show details"
+                      className="text-muted hover:text-ink text-xs flex-shrink-0"
+                    >≡</button>
+                  )}
                   <button
                     onClick={() => removeTodo(i)}
                     className="opacity-0 group-hover:opacity-100 text-muted hover:text-ink text-xs transition-opacity"
@@ -598,7 +618,7 @@ export default function WeeklyPlanner({ userId, dashboard }: { userId: string; d
                   <tbody>
                     {habits.map(habit => (
                       <tr key={habit.id} className="group">
-                        <td className="pr-2 py-1 text-ink truncate max-w-[110px]" title={habit.name}>{habit.name}</td>
+                        <td className="pr-2 py-1 text-ink leading-snug whitespace-normal break-words [overflow-wrap:anywhere]">{habit.name}</td>
                         {activeDays.map((_, dayIdx) => {
                           const date = getDayDateStr(weekStart, dayIdx)
                           const checked = completions.has(`${habit.id}:${date}`)
@@ -647,7 +667,7 @@ export default function WeeklyPlanner({ userId, dashboard }: { userId: string; d
                 value={entry.day_notes[key]}
                 onChange={e => setDayNote(key, e.target.value)}
                 placeholder="Notes for the day…"
-                rows={3}
+                rows={Math.max(3, (entry.day_notes[key] ?? '').split('\n').length)}
                 className="flex-1 resize-none bg-transparent text-base md:text-sm text-ink p-3 outline-none placeholder-muted/30 leading-relaxed"
               />
             </div>
@@ -829,6 +849,16 @@ export default function WeeklyPlanner({ userId, dashboard }: { userId: string; d
           </div>
         )}
       </div>}
+
+      {todosModal && (
+        <TodosModal
+          todos={entry.todos}
+          weekLabel={formatWeekRange(weekStart)}
+          initialIndex={todosModal.index}
+          onChange={todos => updateEntry({ todos })}
+          onClose={() => setTodosModal(null)}
+        />
+      )}
     </section>
   )
 }
